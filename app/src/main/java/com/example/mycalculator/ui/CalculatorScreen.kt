@@ -12,10 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -46,10 +50,10 @@ fun CalculatorScreen(
 ) {
     val shapes = listOf(
         MaterialShapes.Sunny.toShape(),
-        MaterialShapes.Clover4Leaf.toShape(),
+        MaterialShapes.Clover8Leaf.toShape(),
         MaterialShapes.Cookie6Sided.toShape(),
-        MaterialShapes.Flower.toShape(),
-        MaterialShapes.VerySunny.toShape()
+        MaterialShapes.VerySunny.toShape(),
+        MaterialShapes.Flower.toShape()
     )
 
     val infiniteTransition = rememberInfiniteTransition(label = "rotation")
@@ -201,11 +205,15 @@ fun CalculatorScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                CalculatorButton(text = "0", modifier = Modifier.weight(2f)) { viewModel.onNumberClick("0") }
+                CalculatorButton(text = "0", modifier = Modifier.weight(2.1f)) { viewModel.onNumberClick("0") }
                 CalculatorButton(text = ".", modifier = Modifier.weight(1f)) { viewModel.onDecimalClick() }
                 Box(
                     modifier = Modifier
-                        .weight(1.2f),
+                        .weight(1f)
+                        .width(85.dp)
+                        .scale(1.2f)
+                        .absoluteOffset(x = 4.dp, y = 4.dp)
+                        .aspectRatio(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
