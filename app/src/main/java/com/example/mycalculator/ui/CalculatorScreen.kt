@@ -44,6 +44,14 @@ import com.example.mycalculator.ui.theme.MyCalculatorTheme
 fun CalculatorScreen(
     viewModel: CalculatorViewModel = viewModel() // Inject ViewModel
 ) {
+    val shapes = listOf(
+        MaterialShapes.Sunny.toShape(),
+        MaterialShapes.Clover4Leaf.toShape(),
+        MaterialShapes.Cookie6Sided.toShape(),
+        MaterialShapes.Flower.toShape(),
+        MaterialShapes.VerySunny.toShape()
+    )
+
     val infiniteTransition = rememberInfiniteTransition(label = "rotation")
     val angle by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -54,6 +62,16 @@ fun CalculatorScreen(
         ),
         label = "rotateAngle"
     )
+    val shapeIndex by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = shapes.size.toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 15000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shapeIndex"
+    )
+    val currentShape = shapes[shapeIndex.toInt() % shapes.size]
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -85,7 +103,10 @@ fun CalculatorScreen(
         }
         Spacer(modifier = Modifier.height(16.dp))
         // Display Area
-        CalculatorDisplay(currentInput = viewModel.currentInput)
+        CalculatorDisplay(
+            currentInput = viewModel.currentInput,
+            expression = viewModel.expression
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -184,7 +205,7 @@ fun CalculatorScreen(
                 CalculatorButton(text = ".", modifier = Modifier.weight(1f)) { viewModel.onDecimalClick() }
                 Box(
                     modifier = Modifier
-                        .weight(1f),
+                        .weight(1.2f),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -193,7 +214,7 @@ fun CalculatorScreen(
                             .graphicsLayer(
                                 rotationZ = angle
                             )
-                            .clip(MaterialShapes.Cookie9Sided.toShape())
+                            .clip(currentShape)
                             .background(MaterialTheme.colorScheme.primary)
                     )
                     CalculatorButton(

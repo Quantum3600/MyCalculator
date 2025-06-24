@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import kotlin.toString
 
 // Enum to represent calculator operations
 
@@ -13,6 +14,9 @@ enum class CalculatorOperation {
 
 class CalculatorViewModel : ViewModel() {
     var currentInput by mutableStateOf("0")
+        private set
+
+    var expression by mutableStateOf("")
         private set
 
     private var firstOperand by mutableStateOf<Double?>(null)
@@ -30,6 +34,7 @@ class CalculatorViewModel : ViewModel() {
                 currentInput += number
             }
         }
+        updateExpression()
     }
 
     fun onDecimalClick() {
@@ -37,6 +42,7 @@ class CalculatorViewModel : ViewModel() {
             currentInput += "."
             isNewOperation = false
         }
+        updateExpression()
     }
 
     fun onOperatorClick(operator: CalculatorOperation) {
@@ -47,12 +53,14 @@ class CalculatorViewModel : ViewModel() {
         }
         currentOperator = operator
         isNewOperation = true
+        updateExpression()
     }
 
     fun onEqualsClick() {
         performCalculation()
         currentOperator = CalculatorOperation.NONE
         isNewOperation = true
+        expression = ""
     }
 
     fun onClearClick() {
@@ -60,12 +68,13 @@ class CalculatorViewModel : ViewModel() {
         firstOperand = null
         currentOperator = CalculatorOperation.NONE
         isNewOperation = true
+        expression = ""
     }
 
     fun onChangeSignClick() {
         currentInput = try {
             (currentInput.toDouble() * -1).toString()
-        } catch (e: NumberFormatException) {
+        } catch (_: NumberFormatException) {
             "Error"
         }
     }
@@ -74,7 +83,7 @@ class CalculatorViewModel : ViewModel() {
         currentInput = try {
             val value = currentInput.toDouble()
             (value / 100).toString()
-        } catch (e: NumberFormatException) {
+        } catch (_: NumberFormatException) {
             "Error"
         }
     }
@@ -104,6 +113,23 @@ class CalculatorViewModel : ViewModel() {
             firstOperand = currentInput.toDoubleOrNull()
         } else if (firstOperand == null && secondOperand != null && currentOperator == CalculatorOperation.NONE) {
             currentInput = currentInput
+        }
+    }
+
+    private fun updateExpression() {
+        val op = when (currentOperator) {
+            CalculatorOperation.ADD -> "+"
+            CalculatorOperation.SUBTRACT -> "-"
+            CalculatorOperation.MULTIPLY -> "×"
+            CalculatorOperation.DIVIDE -> "÷"
+            else -> ""
+        }
+        expression = if (firstOperand != null && currentOperator != CalculatorOperation.NONE && !isNewOperation) {
+            "${firstOperand!!.toString().removeSuffix(".0")} $op $currentInput"
+        } else if (firstOperand != null && currentOperator != CalculatorOperation.NONE) {
+            "${firstOperand!!.toString().removeSuffix(".0")} $op"
+        } else {
+            currentInput
         }
     }
 }
