@@ -48,34 +48,18 @@ import com.example.mycalculator.ui.theme.MyCalculatorTheme
 fun CalculatorScreen(
     viewModel: CalculatorViewModel = viewModel() // Inject ViewModel
 ) {
-    val shapes = listOf(
-        MaterialShapes.Sunny.toShape(),
-        MaterialShapes.Clover8Leaf.toShape(),
-        MaterialShapes.Cookie6Sided.toShape(),
-        MaterialShapes.VerySunny.toShape(),
-        MaterialShapes.Flower.toShape()
-    )
 
     val infiniteTransition = rememberInfiniteTransition(label = "rotation")
     val angle by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3000, easing = LinearEasing),
+            animation = tween(durationMillis = 5000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotateAngle"
     )
-    val shapeIndex by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = shapes.size.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 15000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shapeIndex"
-    )
-    val currentShape = shapes[shapeIndex.toInt() % shapes.size]
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -103,7 +87,7 @@ fun CalculatorScreen(
                 overflow = TextOverflow.Clip,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f) // Example: blue color, change as needed
             )
-            
+
         }
         Spacer(modifier = Modifier.height(16.dp))
         // Display Area
@@ -222,7 +206,7 @@ fun CalculatorScreen(
                             .graphicsLayer(
                                 rotationZ = angle
                             )
-                            .clip(currentShape)
+                            .clip(MaterialShapes.Cookie6Sided.toShape())
                             .background(MaterialTheme.colorScheme.primary)
                     )
                     CalculatorButton(

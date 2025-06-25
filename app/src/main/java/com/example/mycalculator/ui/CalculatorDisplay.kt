@@ -1,12 +1,14 @@
 package com.example.mycalculator.ui
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.Font
@@ -32,9 +38,25 @@ import com.example.mycalculator.ui.theme.MyCalculatorTheme
 @Composable
 fun CalculatorDisplay(
     currentInput: String,
-    expression: String = ""
+    expression: String
 ) {
     val scrollState = rememberScrollState()
+    var showExpression by remember { mutableStateOf(false) }
+    val extraHeight by animateFloatAsState(
+        targetValue = if (expression.isNotEmpty()) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = 0.6f,
+            stiffness = Spring.StiffnessMedium
+        ),
+        finishedListener = { value ->
+            showExpression = value == 1f && expression.isNotEmpty()
+        },
+        label = "height"
+    )
+    LaunchedEffect(expression) {
+        if (expression.isEmpty()) showExpression = false
+    }
+
 
     // Auto-scroll to the end when expression updates
     LaunchedEffect(currentInput) {
@@ -56,11 +78,16 @@ fun CalculatorDisplay(
                 )
             )
             .padding(16.dp)
-            .heightIn(min = 64.dp),
-        contentAlignment = Alignment.CenterEnd
+            .height(64.dp + (28.dp * extraHeight))
+        ,
+        contentAlignment = Alignment.BottomEnd,
     ) {
-        Column(horizontalAlignment = Alignment.End) {
-            if (expression.isNotEmpty()) {
+        if (showExpression) {
+            Row(
+                modifier = Modifier
+                    .horizontalScroll(scrollState)
+                    .align(Alignment.TopEnd)
+            ) {
                 Text(
                     text = expression,
                     fontSize = 20.sp,
@@ -71,9 +98,11 @@ fun CalculatorDisplay(
                     softWrap = false
                 )
             }
+        }
             Row(
                 modifier = Modifier
                     .horizontalScroll(scrollState)
+                    .height(64.dp)
             ) {
                 Text(
                     text = currentInput,
@@ -86,7 +115,7 @@ fun CalculatorDisplay(
                     textAlign = TextAlign.End
                 )
             }
-        }
+
     }
 }
 
@@ -96,7 +125,18 @@ fun CalculatorDisplay(
 fun CalculatorDisplayPreview() {
     MyCalculatorTheme(darkTheme = true) {
         CalculatorDisplay(
-            currentInput = "00"
+            currentInput = "00",
+            expression = "0 + 6"
+        )
+    }
+}
+@Preview(showBackground = true, backgroundColor = 0x0000)
+@Composable
+fun CalculatorDisplay2Preview() {
+    MyCalculatorTheme(darkTheme = true) {
+        CalculatorDisplay(
+            currentInput = "00",
+            expression = ""
         )
     }
 }

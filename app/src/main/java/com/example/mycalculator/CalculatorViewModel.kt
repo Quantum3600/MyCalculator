@@ -4,9 +4,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import kotlin.toString
-
-// Enum to represent calculator operations
 
 enum class CalculatorOperation {
     ADD, SUBTRACT, MULTIPLY, DIVIDE, NONE
@@ -19,9 +16,9 @@ class CalculatorViewModel : ViewModel() {
     var expression by mutableStateOf("")
         private set
 
-    private var firstOperand by mutableStateOf<Double?>(null)
-    private var currentOperator by mutableStateOf(CalculatorOperation.NONE)
     private var isNewOperation by mutableStateOf(true)
+    private var lastOperator by mutableStateOf(CalculatorOperation.NONE)
+    private var expressionList = mutableListOf<String>()
 
     fun onNumberClick(number: String) {
         if (isNewOperation) {
@@ -46,28 +43,35 @@ class CalculatorViewModel : ViewModel() {
     }
 
     fun onOperatorClick(operator: CalculatorOperation) {
-        if (firstOperand == null) {
-            firstOperand = currentInput.toDoubleOrNull()
-        } else if (!isNewOperation) {
-            performCalculation()
+        if (!isNewOperation) {
+            expressionList.add(currentInput)
+            expressionList.add(getOperatorSymbol(operator))
+        } else if (expressionList.isNotEmpty()) {
+            // Replace the last operator if consecutive operators are clicked
+            expressionList[expressionList.lastIndex] = getOperatorSymbol(operator)
         }
-        currentOperator = operator
+        
+        lastOperator = operator
         isNewOperation = true
         updateExpression()
     }
 
     fun onEqualsClick() {
-        performCalculation()
-        currentOperator = CalculatorOperation.NONE
+        if (!isNewOperation) {
+            expressionList.add(currentInput)
+        }
+        calculateResult()
+        expressionList.clear()
         isNewOperation = true
+        lastOperator = CalculatorOperation.NONE
         expression = ""
     }
 
     fun onClearClick() {
         currentInput = "0"
-        firstOperand = null
-        currentOperator = CalculatorOperation.NONE
+        expressionList.clear()
         isNewOperation = true
+        lastOperator = CalculatorOperation.NONE
         expression = ""
     }
 
@@ -77,6 +81,7 @@ class CalculatorViewModel : ViewModel() {
         } catch (_: NumberFormatException) {
             "Error"
         }
+        updateExpression()
     }
 
     fun onPercentageClick() {
@@ -86,50 +91,88 @@ class CalculatorViewModel : ViewModel() {
         } catch (_: NumberFormatException) {
             "Error"
         }
+        updateExpression()
     }
 
-    private fun performCalculation() {
-        val secondOperand = currentInput.toDoubleOrNull()
-        if (firstOperand != null && secondOperand != null && currentOperator != CalculatorOperation.NONE) {
-            val result = when (currentOperator) {
-                CalculatorOperation.ADD -> firstOperand!! + secondOperand
-                CalculatorOperation.SUBTRACT -> firstOperand!! - secondOperand
-                CalculatorOperation.MULTIPLY -> firstOperand!! * secondOperand
-                CalculatorOperation.DIVIDE -> {
-                    if (secondOperand != 0.0) firstOperand!! / secondOperand else Double.NaN
-                }
-                else -> secondOperand
-            }
+    private fun calculateResult() {
+        if (expressionList.isEmpty()) return
 
-            currentInput = if (result.isNaN() || result.isInfinite()) {
-                "Error"
+        // Copy the expression list to work with
+        val tempExpression = ArrayList(expressionList)
+        if (!isNewOperation) {
+            tempExpression.add(currentInput)
+        }
+
+        // First handle multiplication and division
+        var i = 1
+        while (i < tempExpression.size - 1) {
+            if (tempExpression[i] in listOf("×", "÷")) {
+                val result = performOperation(
+                    tempExpression[i - 1].toDouble(),
+                    tempExpression[i + 1].toDouble(),
+                    tempExpression[i]
+                )
+                tempExpression[i - 1] = result.toString()
+                tempExpression.removeAt(i)
+                tempExpression.removeAt(i)
+                i -= 1
             } else {
-                if(result == result.toLong().toDouble()) {
-                    result.toLong().toString()
-                } else {
-                    result.toString()
-                }
+                i += 2
             }
-            firstOperand = currentInput.toDoubleOrNull()
-        } else if (firstOperand == null && secondOperand != null && currentOperator == CalculatorOperation.NONE) {
-            currentInput = currentInput
+        }
+
+        // Then handle addition and subtraction
+        i = 1
+        while (i < tempExpression.size - 1) {
+            val result = performOperation(
+                tempExpression[0].toDouble(),
+                tempExpression[i + 1].toDouble(),
+                tempExpression[i]
+            )
+            tempExpression[0] = result.toString()
+            tempExpression.removeAt(i)
+            tempExpression.removeAt(i)
+        }
+
+        currentInput = formatResult(tempExpression[0].toDouble())
+    }
+
+    private fun performOperation(a: Double, b: Double, operator: String): Double {
+        return when (operator) {
+            "+" -> a + b
+            "-" -> a - b
+            "×" -> a * b
+            "÷" -> if (b != 0.0) a / b else Double.NaN
+            else -> b
         }
     }
 
-    private fun updateExpression() {
-        val op = when (currentOperator) {
+    private fun formatResult(result: Double): String {
+        return if (result.isNaN() || result.isInfinite()) {
+            "Error"
+        } else if (result == result.toLong().toDouble()) {
+            result.toLong().toString()
+        } else {
+            result.toString()
+        }
+    }
+
+    private fun getOperatorSymbol(operator: CalculatorOperation): String {
+        return when (operator) {
             CalculatorOperation.ADD -> "+"
             CalculatorOperation.SUBTRACT -> "-"
             CalculatorOperation.MULTIPLY -> "×"
             CalculatorOperation.DIVIDE -> "÷"
             else -> ""
         }
-        expression = if (firstOperand != null && currentOperator != CalculatorOperation.NONE && !isNewOperation) {
-            "${firstOperand!!.toString().removeSuffix(".0")} $op $currentInput"
-        } else if (firstOperand != null && currentOperator != CalculatorOperation.NONE) {
-            "${firstOperand!!.toString().removeSuffix(".0")} $op"
-        } else {
+    }
+
+    private fun updateExpression() {
+        expression = if (expressionList.isEmpty()) {
             currentInput
+        } else {
+            expressionList.joinToString(" ") + " " + 
+            (if (!isNewOperation) currentInput else "")
         }
     }
 }
