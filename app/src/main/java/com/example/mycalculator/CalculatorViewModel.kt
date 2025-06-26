@@ -16,11 +16,17 @@ class CalculatorViewModel : ViewModel() {
     var expression by mutableStateOf("")
         private set
 
+    private var wasEqualsPressed by mutableStateOf(false)
     private var isNewOperation by mutableStateOf(true)
     private var lastOperator by mutableStateOf(CalculatorOperation.NONE)
     private var expressionList = mutableListOf<String>()
 
     fun onNumberClick(number: String) {
+        if (wasEqualsPressed) {
+            expressionList.clear()
+            expression = ""
+            wasEqualsPressed = false
+        }
         if (isNewOperation) {
             currentInput = number
             isNewOperation = false
@@ -50,7 +56,6 @@ class CalculatorViewModel : ViewModel() {
             // Replace the last operator if consecutive operators are clicked
             expressionList[expressionList.lastIndex] = getOperatorSymbol(operator)
         }
-        
         lastOperator = operator
         isNewOperation = true
         updateExpression()
@@ -61,10 +66,13 @@ class CalculatorViewModel : ViewModel() {
             expressionList.add(currentInput)
         }
         calculateResult()
-        expressionList.clear()
+        if (currentInput != "Error") {
+            expressionList.add(currentInput)
+        }
         isNewOperation = true
         lastOperator = CalculatorOperation.NONE
         expression = ""
+        wasEqualsPressed = true
     }
 
     fun onClearClick() {
