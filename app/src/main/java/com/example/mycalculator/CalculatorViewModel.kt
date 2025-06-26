@@ -182,5 +182,6 @@ class CalculatorViewModel : ViewModel() {
             expressionList.joinToString(" ") + " " + 
             (if (!isNewOperation) currentInput else "")
         }
+        wasEqualsPressed = false
     }
 }
