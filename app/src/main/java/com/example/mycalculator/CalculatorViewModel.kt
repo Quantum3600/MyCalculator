@@ -6,10 +6,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 
 enum class CalculatorOperation {
-    ADD, SUBTRACT, MULTIPLY, DIVIDE, NONE
+    ADD, SUBTRACT, MULTIPLY, DIVIDE
 }
 
 class CalculatorViewModel : ViewModel() {
+
     var currentInput by mutableStateOf("0")
         private set
 
@@ -17,171 +18,208 @@ class CalculatorViewModel : ViewModel() {
         private set
 
     private var wasEqualsPressed by mutableStateOf(false)
-    private var isNewOperation by mutableStateOf(true)
-    private var lastOperator by mutableStateOf(CalculatorOperation.NONE)
+
     private var expressionList = mutableListOf<String>()
 
     fun onNumberClick(number: String) {
-        if (wasEqualsPressed) {
-            expressionList.clear()
-            expression = ""
-            wasEqualsPressed = false
-        }
-        if (isNewOperation) {
-            currentInput = number
-            isNewOperation = false
-        } else {
-            if (currentInput == "0" && number != ".") {
-                currentInput = number
-            } else {
-                currentInput += number
+        when {
+            wasEqualsPressed -> {
+                // Equals pressed → start fresh
+                expressionList.clear()
+                currentInput = if (number == ".") "0." else number
+                expressionList.add(currentInput)
+                wasEqualsPressed = false
+            }
+            expressionList.isEmpty() -> {
+                // First number
+                currentInput = if (number == ".") "0." else number
+                expressionList.add(currentInput)
+            }
+            isOperator(expressionList.last()) -> {
+                // After operator
+                currentInput = if (number == ".") "0." else number
+                expressionList.add(currentInput)
+            }
+            else -> {
+                // Continue building number
+                if (number == "." && currentInput.contains(".")) return
+
+                if (currentInput == "0" && number != ".") {
+                    currentInput = number
+                } else {
+                    currentInput += number
+                }
+                expressionList[expressionList.lastIndex] = currentInput
             }
         }
         updateExpression()
     }
 
-    fun onDecimalClick() {
-        if (!currentInput.contains(".")) {
-            currentInput += "."
-            isNewOperation = false
-        }
-        updateExpression()
-    }
-
     fun onOperatorClick(operator: CalculatorOperation) {
-        if (!isNewOperation) {
-            expressionList.add(currentInput)
-            expressionList.add(getOperatorSymbol(operator))
-        } else if (expressionList.isNotEmpty()) {
-            // Replace the last operator if consecutive operators are clicked
-            expressionList[expressionList.lastIndex] = getOperatorSymbol(operator)
+        val op = getOperatorSymbol(operator)
+
+        if (wasEqualsPressed) {
+            wasEqualsPressed = false
+            if (currentInput != "Error") {
+                expressionList.clear()
+                expressionList.add(currentInput)
+            } else {
+                currentInput = "0"
+                expressionList.clear()
+            }
         }
-        lastOperator = operator
-        isNewOperation = true
+
+        if (expressionList.isEmpty()) {
+            // If empty, push current number
+            expressionList.add(currentInput)
+        } else if (isOperator(expressionList.last())) {
+            // Replace operator
+            expressionList[expressionList.lastIndex] = op
+            updateExpression()
+            return
+        }
+
+        expressionList.add(op)
         updateExpression()
     }
 
     fun onEqualsClick() {
-        if (!isNewOperation) {
+        if (expressionList.isEmpty()) return
+
+        if (isOperator(expressionList.last())) {
+            // If ends with operator, push current input to complete
             expressionList.add(currentInput)
         }
-        calculateResult()
-        if (currentInput != "Error") {
-            expressionList.add(currentInput)
-        }
-        isNewOperation = true
-        lastOperator = CalculatorOperation.NONE
+
+        val result = evaluateExpression()
+        currentInput = result
+        expressionList.clear()
         expression = ""
         wasEqualsPressed = true
     }
 
     fun onClearClick() {
-        currentInput = "0"
         expressionList.clear()
-        isNewOperation = true
-        lastOperator = CalculatorOperation.NONE
+        currentInput = "0"
         expression = ""
+        wasEqualsPressed = false
     }
 
     fun onChangeSignClick() {
-        currentInput = try {
-            (currentInput.toDouble() * -1).toString()
-        } catch (_: NumberFormatException) {
-            "Error"
+        if (currentInput == "0" || currentInput == "Error") return
+
+        try {
+            val value = currentInput.toDouble() * -1
+            currentInput = formatResult(value)
+            expressionList[expressionList.lastIndex] = currentInput
+        } catch (_: Exception) {
+            currentInput = "Error"
         }
         updateExpression()
     }
 
     fun onPercentageClick() {
-        currentInput = try {
-            val value = currentInput.toDouble()
-            (value / 100).toString()
-        } catch (_: NumberFormatException) {
-            "Error"
+        if (currentInput == "0" || currentInput == "Error") return
+
+        try {
+            val value = currentInput.toDouble() / 100
+            currentInput = formatResult(value)
+            expressionList[expressionList.lastIndex] = currentInput
+        } catch (_: Exception) {
+            currentInput = "Error"
+        }
+        updateExpression()
+    }
+    fun onDecimalClick() {
+        when {
+            wasEqualsPressed -> {
+                expressionList.clear()
+                currentInput = "0."
+                expressionList.add(currentInput)
+                wasEqualsPressed = false
+            }
+            expressionList.isEmpty() -> {
+                currentInput = "0."
+                expressionList.add(currentInput)
+            }
+            isOperator(expressionList.last()) -> {
+                currentInput = "0."
+                expressionList.add(currentInput)
+            }
+            else -> {
+                if (!currentInput.contains(".")) {
+                    currentInput += "."
+                    expressionList[expressionList.lastIndex] = currentInput
+                }
+            }
         }
         updateExpression()
     }
 
-    private fun calculateResult() {
-        if (expressionList.isEmpty()) return
 
-        // Copy the expression list to work with
-        val tempExpression = ArrayList(expressionList)
-        if (!isNewOperation) {
-            tempExpression.add(currentInput)
-        }
+    private fun evaluateExpression(): String {
+        if (expressionList.isEmpty()) return "0"
 
-        // First handle multiplication and division
+        val temp = ArrayList(expressionList)
+
+        // First pass: × and ÷
         var i = 1
-        while (i < tempExpression.size - 1) {
-            if (tempExpression[i] in listOf("×", "÷")) {
-                val result = performOperation(
-                    tempExpression[i - 1].toDouble(),
-                    tempExpression[i + 1].toDouble(),
-                    tempExpression[i]
-                )
-                tempExpression[i - 1] = result.toString()
-                tempExpression.removeAt(i)
-                tempExpression.removeAt(i)
+        while (i < temp.size - 1) {
+            if (temp[i] == "×" || temp[i] == "÷") {
+                val a = temp[i - 1].toDouble()
+                val b = temp[i + 1].toDouble()
+                val result = when (temp[i]) {
+                    "×" -> a * b
+                    "÷" -> if (b != 0.0) a / b else return "Error"
+                    else -> 0.0
+                }
+                temp[i - 1] = result.toString()
+                temp.removeAt(i)
+                temp.removeAt(i)
                 i -= 1
             } else {
                 i += 2
             }
         }
 
-        // Then handle addition and subtraction
+        // Second pass: + and -
+        var result = temp[0].toDouble()
         i = 1
-        while (i < tempExpression.size - 1) {
-            val result = performOperation(
-                tempExpression[0].toDouble(),
-                tempExpression[i + 1].toDouble(),
-                tempExpression[i]
-            )
-            tempExpression[0] = result.toString()
-            tempExpression.removeAt(i)
-            tempExpression.removeAt(i)
+        while (i < temp.size - 1) {
+            val b = temp[i + 1].toDouble()
+            result = when (temp[i]) {
+                "+" -> result + b
+                "-" -> result - b
+                else -> result
+            }
+            i += 2
         }
 
-        currentInput = formatResult(tempExpression[0].toDouble())
+        return formatResult(result)
     }
 
-    private fun performOperation(a: Double, b: Double, operator: String): Double {
-        return when (operator) {
-            "+" -> a + b
-            "-" -> a - b
-            "×" -> a * b
-            "÷" -> if (b != 0.0) a / b else Double.NaN
-            else -> b
+    private fun getOperatorSymbol(op: CalculatorOperation): String {
+        return when (op) {
+            CalculatorOperation.ADD -> "+"
+            CalculatorOperation.SUBTRACT -> "-"
+            CalculatorOperation.MULTIPLY -> "×"
+            CalculatorOperation.DIVIDE -> "÷"
         }
+    }
+
+    private fun isOperator(s: String): Boolean {
+        return s in listOf("+", "-", "×", "÷")
     }
 
     private fun formatResult(result: Double): String {
-        return if (result.isNaN() || result.isInfinite()) {
-            "Error"
-        } else if (result == result.toLong().toDouble()) {
+        return if (result == result.toLong().toDouble()) {
             result.toLong().toString()
         } else {
             result.toString()
         }
     }
 
-    private fun getOperatorSymbol(operator: CalculatorOperation): String {
-        return when (operator) {
-            CalculatorOperation.ADD -> "+"
-            CalculatorOperation.SUBTRACT -> "-"
-            CalculatorOperation.MULTIPLY -> "×"
-            CalculatorOperation.DIVIDE -> "÷"
-            else -> ""
-        }
-    }
-
     private fun updateExpression() {
-        expression = if (expressionList.isEmpty()) {
-            currentInput
-        } else {
-            expressionList.joinToString(" ") + " " + 
-            (if (!isNewOperation) currentInput else "")
-        }
-        wasEqualsPressed = false
+        expression = expressionList.joinToString(" ")
     }
 }
