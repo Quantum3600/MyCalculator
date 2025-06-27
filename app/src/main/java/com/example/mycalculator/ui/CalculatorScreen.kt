@@ -41,7 +41,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mycalculator.CalculatorOperation
 import com.example.mycalculator.CalculatorViewModel
+import com.example.mycalculator.data.HistoryDao
+import com.example.mycalculator.data.HistoryItem
 import com.example.mycalculator.ui.theme.MyCalculatorTheme
+import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -117,11 +120,11 @@ fun CalculatorScreen(
                     textColor = MaterialTheme.colorScheme.onSecondaryContainer
                 ) { viewModel.onClearClick() }
                 CalculatorButton(
-                    text = "+/-",
+                    text = "<-",
                     modifier = Modifier.weight(1f),
                     backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
                     textColor = MaterialTheme.colorScheme.onSecondaryContainer
-                ) { viewModel.onChangeSignClick() }
+                ) { viewModel.onBackspaceClick() }
                 CalculatorButton(
                     text = "%",
                     modifier = Modifier.weight(1f),
@@ -225,10 +228,36 @@ fun CalculatorScreen(
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, device = Devices.PIXEL_7_PRO)
+@Preview(showBackground = true, showSystemUi = true, device = Devices.PIXEL_7_PRO, apiLevel = 35)
 @Composable
 fun CalculatorScreenPreview() {
     MyCalculatorTheme(darkTheme = true) {
-        CalculatorScreen()
+        CalculatorScreen(
+            viewModel = FakeCalculatorViewModel()
+        )
+    }
+}
+
+// Create a fake ViewModel just for preview
+private class FakeCalculatorViewModel : CalculatorViewModel(FakeHistoryDao()) {
+    // Override if needed
+}
+
+private class FakeHistoryDao : HistoryDao {
+    // Implement required methods with preview data
+    override suspend fun insert(historyItem: HistoryItem) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun deleteById(id: Int) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun clearAll() {
+        TODO("Not yet implemented")
+    }
+
+    override fun getAll(): Flow<List<HistoryItem>> {
+        TODO("Not yet implemented")
     }
 }

@@ -4,12 +4,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.example.mycalculator.data.HistoryDao
 
 enum class CalculatorOperation {
     ADD, SUBTRACT, MULTIPLY, DIVIDE
 }
 
-class CalculatorViewModel : ViewModel() {
+open class CalculatorViewModel(
+    private val dao: HistoryDao
+) : ViewModel() {
 
     var currentInput by mutableStateOf("0")
         private set
@@ -40,6 +43,15 @@ class CalculatorViewModel : ViewModel() {
                 currentInput = if (number == ".") "0." else number
                 expressionList.add(currentInput)
             }
+            expressionList.isNotEmpty() && expressionList.last() == "-" && (expressionList.size == 1 || isOperator(expressionList[expressionList.size -2])) -> {
+                // Handle negative numbers after an operator or at the beginning
+                currentInput = if (number == ".") "-0." else "-$number"
+                if (expressionList.size > 1 && isOperator(expressionList[expressionList.size - 2])) {
+                    expressionList[expressionList.lastIndex] = currentInput // Replace the "-" with the negative number
+                } else { // Handles cases like "-" at the start
+                    expressionList[expressionList.lastIndex] = currentInput
+                }
+            }
             else -> {
                 // Continue building number
                 if (number == "." && currentInput.contains(".")) return
@@ -55,33 +67,48 @@ class CalculatorViewModel : ViewModel() {
         updateExpression()
     }
 
-    fun onOperatorClick(operator: CalculatorOperation) {
-        val op = getOperatorSymbol(operator)
+   fun onOperatorClick(operator: CalculatorOperation) {
+       val op = getOperatorSymbol(operator)
 
-        if (wasEqualsPressed) {
-            wasEqualsPressed = false
-            if (currentInput != "Error") {
-                expressionList.clear()
-                expressionList.add(currentInput)
-            } else {
-                currentInput = "0"
-                expressionList.clear()
-            }
-        }
+       if (wasEqualsPressed) {
+           wasEqualsPressed = false
+           if (currentInput != "Error") {
+               expressionList.clear()
+               expressionList.add(currentInput)
+           } else {
+               currentInput = "0"
+               expressionList.clear()
+           }
+       }
 
-        if (expressionList.isEmpty()) {
-            // If empty, push current number
-            expressionList.add(currentInput)
-        } else if (isOperator(expressionList.last())) {
-            // Replace operator
-            expressionList[expressionList.lastIndex] = op
-            updateExpression()
-            return
-        }
+       // Handle first operator as minus for negative numbers
+       if (expressionList.isEmpty()) {
+           if (op == "-") {
+               currentInput = "-"
+               expressionList.add("0$currentInput")
+               updateExpression()
+               return
+           } else {
+               // If first operator is not minus, just add currentInput
+               expressionList.add(currentInput)
+           }
+       } else if (isOperator(expressionList.last())) {
+           // If previous is a minus and another operator is pressed, reset minus to 0
+           if (expressionList.last() == "-" && (expressionList.size == 1 || isOperator(expressionList[expressionList.size - 2]))) {
+               currentInput = "0"
+               expressionList[expressionList.lastIndex] = op
+               updateExpression()
+               return
+           }
+           // Replace operator
+           expressionList[expressionList.lastIndex] = op
+           updateExpression()
+           return
+       }
 
-        expressionList.add(op)
-        updateExpression()
-    }
+       expressionList.add(op)
+       updateExpression()
+   }
 
     fun onEqualsClick() {
         if (expressionList.isEmpty()) return
@@ -105,15 +132,22 @@ class CalculatorViewModel : ViewModel() {
         wasEqualsPressed = false
     }
 
-    fun onChangeSignClick() {
+    fun onBackspaceClick() {
         if (currentInput == "0" || currentInput == "Error") return
 
-        try {
-            val value = currentInput.toDouble() * -1
-            currentInput = formatResult(value)
-            expressionList[expressionList.lastIndex] = currentInput
-        } catch (_: Exception) {
-            currentInput = "Error"
+        currentInput = if (currentInput.length == 1) {
+            "0"
+        } else if (isOperator(expressionList.last())){
+            currentInput
+        } else {
+            currentInput.dropLast(1)
+        }
+        if (expressionList.isNotEmpty()) {
+            if (isOperator(expressionList.last())) {
+                expressionList.removeAt(expressionList.lastIndex)
+            } else {
+                expressionList[expressionList.lastIndex] = currentInput
+            }
         }
         updateExpression()
     }
