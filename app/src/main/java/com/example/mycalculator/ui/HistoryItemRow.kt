@@ -74,7 +74,7 @@ fun HistoryItemRow(
             supportingContent = {
                 Text(
                     text = item.result,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontFamily = spaceMonoFamily
                 )
@@ -83,7 +83,7 @@ fun HistoryItemRow(
                 Text(
                     text = item.expression + " =",
                     fontStyle = FontStyle.Italic,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     fontFamily = spaceMonoFamily,
                 )

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -58,7 +57,7 @@ fun HistorySection(
     val spaceMonoFamily = FontFamily(
         Font(R.font.space_mono_bold, FontWeight.Bold)
     )
-    val collapsedHeight = 265.dp
+    val collapsedHeight = 256.dp
     val expandedHeightInPixels = LocalWindowInfo.current.containerSize.height
     val expandedHeight = with(LocalDensity.current) { expandedHeightInPixels.toDp() }
 
@@ -75,7 +74,6 @@ fun HistorySection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .safeContentPadding()
             .height(animatedHeight)
             .padding(bottom = 20.dp)
             .background(
@@ -145,7 +143,9 @@ fun HistorySection(
                         .padding(horizontal = 16.dp, vertical = 4.dp)
                 )
                 LazyColumn(
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier
+                        .padding(8.dp),
+                    reverseLayout = true,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(
@@ -161,6 +161,7 @@ fun HistorySection(
                 }
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -184,7 +185,7 @@ fun HistorySection(
 fun HistorySectionPreview() {
     val sampleItems = listOf(
         HistoryItem(id = 1, expression = "2+2", result = "4"),
-        HistoryItem(id = 2, expression = "3*3", result = "9")
+        HistoryItem(id = 2, expression = "3*3", result = "9"),
     )
     MyCalculatorTheme(darkTheme = true) {
         HistorySection(
