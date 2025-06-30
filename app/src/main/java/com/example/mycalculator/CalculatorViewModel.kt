@@ -4,7 +4,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.mycalculator.data.HistoryDao
+import com.example.mycalculator.data.HistoryItem
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 enum class CalculatorOperation {
     ADD, SUBTRACT, MULTIPLY, DIVIDE
@@ -13,6 +18,13 @@ enum class CalculatorOperation {
 open class CalculatorViewModel(
     private val dao: HistoryDao
 ) : ViewModel() {
+
+    val historyItems = dao.getAll()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(),
+            initialValue = emptyList()
+        )
 
     var currentInput by mutableStateOf("0")
         private set
@@ -24,7 +36,12 @@ open class CalculatorViewModel(
 
     private var expressionList = mutableListOf<String>()
 
+    private var wasClearPressed = false
+    private var lastSavedExpression: String? = null
+    private var lastSavedResult: String? = null
+
     fun onNumberClick(number: String) {
+        wasClearPressed = false
         when {
             wasEqualsPressed -> {
                 // Equals pressed → start fresh
@@ -68,6 +85,7 @@ open class CalculatorViewModel(
     }
 
    fun onOperatorClick(operator: CalculatorOperation) {
+       wasClearPressed = false
        val op = getOperatorSymbol(operator)
 
        if (wasEqualsPressed) {
@@ -111,6 +129,7 @@ open class CalculatorViewModel(
    }
 
     fun onEqualsClick() {
+        wasClearPressed = false
         if (expressionList.isEmpty()) return
 
         if (isOperator(expressionList.last())) {
@@ -119,52 +138,93 @@ open class CalculatorViewModel(
         }
 
         val result = evaluateExpression()
+
+        if (result != "Error" && (expression.trim() != lastSavedExpression || result != lastSavedResult)) {
+            saveHistoryItem(result)
+            lastSavedExpression = expression.trim()
+            lastSavedResult = result.trim()
+        }
+
         currentInput = result
         expressionList.clear()
         expression = ""
         wasEqualsPressed = true
     }
 
-    fun onClearClick() {
-        expressionList.clear()
-        currentInput = "0"
-        expression = ""
+    fun deleteHistoryItem(item: HistoryItem) {
+        viewModelScope.launch {
+            dao.deleteById(item.id)
+        }
+    }
+    fun restoreFromHistory(item: HistoryItem) {
+        wasClearPressed = false
+        currentInput = item.result.trim()
+        expression = item.expression.trim()
         wasEqualsPressed = false
+    }
+    private fun saveHistoryItem(result: String) {
+        viewModelScope.launch {
+            dao.insert(
+                HistoryItem(
+                    expression = expression.trim(),
+                    result = result.trim()
+                )
+            )
+        }
+    }
+
+    fun onClearClick() {
+        if (wasEqualsPressed) {
+            expressionList.clear()
+            currentInput = "0"
+            expression = ""
+            wasEqualsPressed = false
+            wasClearPressed = false
+        } else {
+            expressionList.clear()
+            currentInput = "0"
+            expression = ""
+            wasEqualsPressed = false
+        }
     }
 
     fun onBackspaceClick() {
+        wasClearPressed = false
         if (currentInput == "0" || currentInput == "Error") return
 
-        currentInput = if (currentInput.length == 1) {
-            "0"
-        } else if (isOperator(expressionList.last())){
-            currentInput
-        } else {
-            currentInput.dropLast(1)
+        if (expressionList.isEmpty()) {
+            currentInput = if (currentInput.length == 1) {
+                "0"
+            } else currentInput.dropLast(1)
+            return
         }
-        if (expressionList.isNotEmpty()) {
-            if (isOperator(expressionList.last())) {
-                expressionList.removeAt(expressionList.lastIndex)
-            } else {
-                expressionList[expressionList.lastIndex] = currentInput
-            }
+        if (isOperator(expressionList.last())) {
+            expressionList.removeAt(expressionList.lastIndex)
+        } else {
+            currentInput = if (currentInput.length == 1) {
+                "0"
+            } else currentInput.dropLast(1)
+            expressionList[expressionList.lastIndex] = currentInput
         }
         updateExpression()
     }
 
     fun onPercentageClick() {
+        wasClearPressed = false
         if (currentInput == "0" || currentInput == "Error") return
-
         try {
             val value = currentInput.toDouble() / 100
             currentInput = formatResult(value)
-            expressionList[expressionList.lastIndex] = currentInput
+            if (expressionList.isNotEmpty()) {
+                expressionList[expressionList.lastIndex] = currentInput
+                updateExpression()
+            }
         } catch (_: Exception) {
             currentInput = "Error"
         }
-        updateExpression()
     }
     fun onDecimalClick() {
+        wasClearPressed = false
         when {
             wasEqualsPressed -> {
                 expressionList.clear()
@@ -255,5 +315,10 @@ open class CalculatorViewModel(
 
     private fun updateExpression() {
         expression = expressionList.joinToString(" ")
+    }
+    fun clearHistory() {
+        viewModelScope.launch {
+            dao.clearAll()
+        }
     }
 }
