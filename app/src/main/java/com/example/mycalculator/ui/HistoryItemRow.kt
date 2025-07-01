@@ -56,7 +56,7 @@ fun HistoryItemRow(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(shape = RoundedCornerShape(16.dp))
+                    .clip(shape = RoundedCornerShape(18.dp))
                     .background(color),
                 contentAlignment = Alignment.CenterEnd
             ) {
