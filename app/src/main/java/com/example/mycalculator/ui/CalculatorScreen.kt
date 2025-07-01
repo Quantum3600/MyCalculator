@@ -63,7 +63,7 @@ fun CalculatorScreen(
         )
     ) // Inject ViewModel
 ) {
-    var displayHeightPx by remember { mutableIntStateOf(1024)}
+    var displayHeightPx by remember { mutableIntStateOf(932)}
     val density = LocalDensity.current
     val displayHeightDp = with(density) { displayHeightPx.toDp() }
     val history by viewModel.historyItems.collectAsState()
