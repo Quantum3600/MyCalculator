@@ -38,7 +38,8 @@ import com.example.mycalculator.ui.theme.MyCalculatorTheme
 @Composable
 fun CalculatorDisplay(
     currentInput: String,
-    expression: String
+    expression: String,
+    modifier: Modifier
 ) {
     val scrollState = rememberScrollState()
     var showExpression by remember { mutableStateOf(false) }
@@ -126,7 +127,8 @@ fun CalculatorDisplayPreview() {
     MyCalculatorTheme(darkTheme = true) {
         CalculatorDisplay(
             currentInput = "00",
-            expression = "0 + 6"
+            expression = "0 + 6",
+            modifier = Modifier,
         )
     }
 }
@@ -136,7 +138,8 @@ fun CalculatorDisplay2Preview() {
     MyCalculatorTheme(darkTheme = true) {
         CalculatorDisplay(
             currentInput = "00",
-            expression = ""
+            expression = "",
+            modifier = Modifier,
         )
     }
 }

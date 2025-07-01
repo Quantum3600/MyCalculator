@@ -26,13 +26,19 @@ import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,7 +63,9 @@ fun CalculatorScreen(
         )
     ) // Inject ViewModel
 ) {
-
+    var displayHeightPx by remember { mutableIntStateOf(1024)}
+    val density = LocalDensity.current
+    val displayHeightDp = with(density) { displayHeightPx.toDp() }
     val history by viewModel.historyItems.collectAsState()
     val infiniteTransition = rememberInfiniteTransition(label = "rotation")
     val angle by infiniteTransition.animateFloat(
@@ -76,6 +84,7 @@ fun CalculatorScreen(
             onDelete = { viewModel.deleteHistoryItem(it) },
             onRestore = { viewModel.restoreFromHistory(it) },
             onClearHistory = { viewModel.clearHistory() },
+            minimumHeight = displayHeightDp,
             modifier = Modifier
                 .fillMaxWidth()
                 .zIndex(2f)
@@ -92,7 +101,10 @@ fun CalculatorScreen(
             // Display Area
             CalculatorDisplay(
                 currentInput = viewModel.currentInput,
-                expression = viewModel.expression
+                expression = viewModel.expression,
+                modifier = Modifier.onGloballyPositioned { coordinates ->
+                    displayHeightPx = coordinates.size.height
+                }
             )
 
             Spacer(modifier = Modifier.height(16.dp))

@@ -87,7 +87,7 @@ open class CalculatorViewModel(
    fun onOperatorClick(operator: CalculatorOperation) {
        wasClearPressed = false
        val op = getOperatorSymbol(operator)
-
+       if (currentInput == "-") return
        if (wasEqualsPressed) {
            wasEqualsPressed = false
            if (currentInput != "Error") {
@@ -211,7 +211,7 @@ open class CalculatorViewModel(
 
     fun onPercentageClick() {
         wasClearPressed = false
-        if (currentInput == "0" || currentInput == "Error") return
+        if (currentInput == "0" || currentInput == "Error" || currentInput == "-") return
         try {
             val value = currentInput.toDouble() / 100
             currentInput = formatResult(value)
@@ -225,6 +225,7 @@ open class CalculatorViewModel(
     }
     fun onDecimalClick() {
         wasClearPressed = false
+        if (currentInput == "-") return
         when {
             wasEqualsPressed -> {
                 expressionList.clear()

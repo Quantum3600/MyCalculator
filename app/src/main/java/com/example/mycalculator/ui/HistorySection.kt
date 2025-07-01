@@ -7,12 +7,18 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -40,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.example.mycalculator.R
 import com.example.mycalculator.data.HistoryItem
@@ -52,12 +59,13 @@ fun HistorySection(
     onDelete: (HistoryItem) -> Unit,
     onRestore: (HistoryItem) -> Unit,
     onClearHistory: () -> Unit,
+    minimumHeight: Dp,
     modifier: Modifier = Modifier
 ) {
     val spaceMonoFamily = FontFamily(
         Font(R.font.space_mono_bold, FontWeight.Bold)
     )
-    val collapsedHeight = 256.dp
+    val collapsedHeight = minimumHeight
     val expandedHeightInPixels = LocalWindowInfo.current.containerSize.height
     val expandedHeight = with(LocalDensity.current) { expandedHeightInPixels.toDp() }
 
@@ -125,43 +133,50 @@ fun HistorySection(
                     )
                 }
             } else {
-                FilledTonalButton(
-                    content = { Text(
-                        text = "Clear All",
-                        fontFamily = spaceMonoFamily
-                    ) },
-                    onClick = onClearHistory,
-                    enabled = true,
-                    shapes = ButtonDefaults.shapes(),
-                    colors = filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.6f)
-                    ),
+                Column(
                     modifier = Modifier
-                        .wrapContentSize(Alignment.Center)
-                        .align(Alignment.End)
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-                LazyColumn(
-                    modifier = Modifier
-                        .padding(8.dp),
-                    reverseLayout = true,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .weight(1f, fill = true)
+                        .align(Alignment.End),
+                    verticalArrangement = Arrangement.Bottom,
+                    horizontalAlignment = Alignment.End
                 ) {
-                    items(
-                        items = historyItems,
-                        key = { it.id }
-                    ) { item ->
-                        HistoryItemRow(
-                            item = item,
-                            onDelete = onDelete,
-                            onRestore = onRestore
-                        )
+                    FilledTonalButton(
+                        content = { Text(
+                            text = "Clear All",
+                            fontFamily = spaceMonoFamily
+                        ) },
+                        onClick = onClearHistory,
+                        enabled = true,
+                        shapes = ButtonDefaults.shapes(),
+                        colors = filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.6f)
+                        ),
+                        modifier = Modifier
+                            .wrapContentSize(Alignment.Center)
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                    LazyColumn(
+                        modifier = Modifier
+                            .heightIn(max = expandedHeight * 0.7f)
+                            .padding(8.dp),
+                        reverseLayout = true,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(
+                            items = historyItems,
+                            key = { it.id }
+                        ) { item ->
+                            HistoryItemRow(
+                                item = item,
+                                onDelete = onDelete,
+                                onRestore = onRestore
+                            )
+                        }
                     }
                 }
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -192,7 +207,8 @@ fun HistorySectionPreview() {
             historyItems = sampleItems,
             onDelete = {},
             onRestore = {},
-            onClearHistory = {}
+            onClearHistory = {},
+            minimumHeight = 256.dp
         )
     }
 }
