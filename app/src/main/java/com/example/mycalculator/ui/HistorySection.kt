@@ -1,6 +1,8 @@
 package com.example.mycalculator.ui
 
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -60,7 +62,15 @@ fun HistorySection(
     val spaceMonoFamily = FontFamily(
         Font(R.font.space_mono_bold, FontWeight.Bold)
     )
-    val collapsedHeight = minimumHeight
+    val collapsedHeight = 382.dp - minimumHeight
+    val animatedCollapsedHeight by animateDpAsState(
+        targetValue = collapsedHeight,
+        animationSpec = spring(
+            dampingRatio = 0.6f,
+            stiffness = Spring.StiffnessHigh
+        ),
+        label = "collapsedHeightSpring"
+    )
     val expandedHeightInPixels = LocalWindowInfo.current.containerSize.height
     val expandedHeight = with(LocalDensity.current) { expandedHeightInPixels.toDp() }
 
@@ -72,7 +82,7 @@ fun HistorySection(
     val minHeightPx = with(density) { collapsedHeight.toPx() }
     val maxHeightPx = with(density) { expandedHeight.toPx() }
 
-    val targetHeight = if (expanded) expandedHeight else collapsedHeight
+    val targetHeight = if (expanded) expandedHeight else animatedCollapsedHeight
     val animatedHeight by animateDpAsState(targetValue = targetHeight + with(LocalDensity.current) { dragOffset.toDp() })
     Column(
         modifier = modifier
