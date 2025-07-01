@@ -67,7 +67,7 @@ fun CalculatorDisplay(
         Font(R.font.space_mono_bolditalic, FontWeight.Bold)
     )
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .background(
