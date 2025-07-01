@@ -12,7 +12,7 @@ import com.example.mycalculator.R
 
 object DisplayLargeVFConfig {
     const val WEIGHT = 950
-    const val WIDTH = 75f
+    const val WIDTH = 95f
     val OPTICAL_SIZE = 144.sp
 }
 

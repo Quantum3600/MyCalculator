@@ -1,9 +1,13 @@
 package com.example.mycalculator.ui
 
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,12 +46,20 @@ fun CalculatorButton(
             contentColor = textColor
         )
     ) {
-        Text(
-            text = text,
-            fontFamily = spaceMonoFamily,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Medium
-        )
+        if (text == "<-") {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.Backspace,
+                contentDescription = "Backspace",
+                modifier = modifier.fillMaxSize(0.4f)
+            )
+        } else {
+            Text(
+                text = text,
+                fontFamily = spaceMonoFamily,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 
